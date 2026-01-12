@@ -1,16 +1,15 @@
 import type { RobotStrategy, Action } from "../Robot";
 import { Robot } from "../Robot";
 import { Field } from "../Field";
-import { FieldTile, EV_SCORED, FIELD_WIDTH } from "../GameConst";
+import { FieldTile, FIELD_WIDTH } from "../GameConst";
 import {
-  findBestEVBall,
   getScoringLocation,
   getPathTarget,
   isInTeamZone,
 } from "../StrategyUtils";
 
 export class BasicScoringStrategy implements RobotStrategy {
-  moveSpeed = 3.0; // m/s
+  moveSpeed = 24.0; // grid cells per second (10 ft/s = 120 in/s = 24 cells at 5in/cell)
   actionTime = 1.0;
 
   decideMove(robot: Robot, field: Field): { x: number; y: number } | null {
@@ -38,22 +37,30 @@ export class BasicScoringStrategy implements RobotStrategy {
       }
     }
 
-    // Else, find ball to reload
-    const scoreLoc = getScoringLocation(field, robot.team);
-    const targetPos = scoreLoc
-      ? { x: scoreLoc.x + 0.5, y: scoreLoc.y + 0.5 }
-      : { x: robot.x, y: robot.y };
-
-    const { ball: bestBall } = findBestEVBall(
-      field,
-      robot,
-      targetPos,
-      EV_SCORED,
-    );
-    if (bestBall) {
-      return getPathTarget(field, robot, bestBall);
+    // Else, find closest ball to reload
+    const closestBall = this.findClosestBall(field, robot);
+    if (closestBall) {
+      return getPathTarget(field, robot, closestBall);
     }
     return null;
+  }
+
+  findClosestBall(field: Field, robot: Robot): { x: number; y: number } | null {
+    let closestBall: { x: number; y: number } | null = null;
+    let closestDist = Infinity;
+
+    for (let r = 0; r < field.grid.length; r++) {
+      for (let c = 0; c < field.grid[0].length; c++) {
+        if (field.grid[r][c] === FieldTile.BALL) {
+          const dist = Math.sqrt(Math.pow(c - robot.x, 2) + Math.pow(r - robot.y, 2));
+          if (dist < closestDist) {
+            closestDist = dist;
+            closestBall = { x: c + 0.5, y: r + 0.5 };
+          }
+        }
+      }
+    }
+    return closestBall;
   }
 
   decideAction(robot: Robot, field: Field): Action | null {

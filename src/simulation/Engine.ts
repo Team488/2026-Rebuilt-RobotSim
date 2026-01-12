@@ -12,7 +12,7 @@ import {
   ROBOTS_PER_TEAM,
   BALL_SPEED,
   FieldTile,
-  SHOT_COOLDOWN_TICKS,
+  ROBOT_WIDTH_GRID,
 } from "./GameConst";
 import type { Team } from "./GameConst";
 import { isInTeamZone } from "./StrategyUtils";
@@ -209,7 +209,12 @@ export class Engine {
     this.robots.forEach((robot) => {
       if (robot.shotCooldown > 0) robot.shotCooldown--;
       robot.move(this.field, dt);
+    });
 
+    // Resolve robot-robot collisions
+    this.resolveRobotCollisions();
+
+    this.robots.forEach((robot) => {
       // Robot Action Decision Phase
       const action = robot.currentStrategy.decideAction(robot, this.field);
 
@@ -288,7 +293,7 @@ export class Engine {
             originY: robot.y,
           });
 
-          robot.shotCooldown = SHOT_COOLDOWN_TICKS;
+          robot.shotCooldown = robot.shotCooldownMax;
           console.log(`${robot.id} SHOT ball.`);
         }
       } else if (action?.type === "DROP") {
@@ -329,5 +334,39 @@ export class Engine {
         robot.setMode("COLLECTING");
       }
     });
+  }
+
+  resolveRobotCollisions() {
+    const robotRadius = ROBOT_WIDTH_GRID / 2;
+    const minDist = ROBOT_WIDTH_GRID; // Minimum distance between robot centers
+
+    for (let i = 0; i < this.robots.length; i++) {
+      for (let j = i + 1; j < this.robots.length; j++) {
+        const r1 = this.robots[i];
+        const r2 = this.robots[j];
+
+        const dx = r2.x - r1.x;
+        const dy = r2.y - r1.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < minDist && dist > 0) {
+          // Collision detected - push robots apart
+          const overlap = minDist - dist;
+          const pushX = (dx / dist) * (overlap / 2);
+          const pushY = (dy / dist) * (overlap / 2);
+
+          r1.x -= pushX;
+          r1.y -= pushY;
+          r2.x += pushX;
+          r2.y += pushY;
+
+          // Clamp to field boundaries
+          r1.x = Math.max(robotRadius, Math.min(FIELD_WIDTH - robotRadius, r1.x));
+          r1.y = Math.max(robotRadius, Math.min(this.field.grid.length - robotRadius, r1.y));
+          r2.x = Math.max(robotRadius, Math.min(FIELD_WIDTH - robotRadius, r2.x));
+          r2.y = Math.max(robotRadius, Math.min(this.field.grid.length - robotRadius, r2.y));
+        }
+      }
+    }
   }
 }

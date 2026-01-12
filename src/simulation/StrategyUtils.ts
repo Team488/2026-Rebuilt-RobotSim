@@ -334,3 +334,7 @@ export function isInTeamZone(x: number, team: Team): boolean {
     return x >= (2 * FIELD_WIDTH) / 3;
   }
 }
+
+export function isInNeutralZone(x: number): boolean {
+  return x >= FIELD_WIDTH / 3 && x < (2 * FIELD_WIDTH) / 3;
+}

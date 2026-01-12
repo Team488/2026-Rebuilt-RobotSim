@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Engine } from "../simulation/Engine";
 import { FieldTile } from "../simulation/GameConst";
-import { FIELD_WIDTH, FIELD_HEIGHT } from "../simulation/GameConst";
+import { FIELD_WIDTH, FIELD_HEIGHT, BALL_RADIUS_GRID, ROBOT_WIDTH_GRID, ROBOT_HEIGHT_GRID } from "../simulation/GameConst";
 
 interface FieldViewProps {
   engine: Engine;
@@ -11,8 +11,9 @@ export const FieldView: React.FC<FieldViewProps> = ({ engine }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Scale factor: Tiles to Pixels
-  // Field is roughly 32x16. Let's aim for ~800px width. 800/32 = 25.
-  const SCALE = 30;
+  // Standard FRC field: 130x65 grid cells (54ft x 27ft at 5in grid)
+  // Aim for ~1000px width: 1000/130 ≈ 7.7
+  const SCALE = 8;
 
   useEffect(() => {
     const render = () => {
@@ -57,7 +58,7 @@ export const FieldView: React.FC<FieldViewProps> = ({ engine }) => {
               ctx.arc(
                 x + 0.5 * SCALE,
                 y + 0.5 * SCALE,
-                0.3 * SCALE,
+                BALL_RADIUS_GRID * SCALE,
                 0,
                 2 * Math.PI,
               );
@@ -93,22 +94,22 @@ export const FieldView: React.FC<FieldViewProps> = ({ engine }) => {
         // Shadow (simulate height by offsetting shadow)
         ctx.fillStyle = "rgba(0,0,0,0.5)";
         ctx.beginPath();
-        ctx.arc(x + 5, y + 5, 0.2 * SCALE, 0, 2 * Math.PI);
+        ctx.arc(x + 5, y + 5, BALL_RADIUS_GRID * 0.8 * SCALE, 0, 2 * Math.PI);
         ctx.fill();
 
         // Ball
         ctx.fillStyle = "#ffcc00"; // Brighter orange for visibility
         ctx.beginPath();
-        ctx.arc(x, y, 0.25 * SCALE, 0, 2 * Math.PI);
+        ctx.arc(x, y, BALL_RADIUS_GRID * SCALE, 0, 2 * Math.PI);
         ctx.fill();
 
         // Highlight/Sheen
         ctx.fillStyle = "rgba(255,255,255,0.6)";
         ctx.beginPath();
         ctx.arc(
-          x - 0.08 * SCALE,
-          y - 0.08 * SCALE,
-          0.08 * SCALE,
+          x - BALL_RADIUS_GRID * 0.16 * SCALE,
+          y - BALL_RADIUS_GRID * 0.16 * SCALE,
+          BALL_RADIUS_GRID * 0.16 * SCALE,
           0,
           2 * Math.PI,
         );
@@ -122,29 +123,26 @@ export const FieldView: React.FC<FieldViewProps> = ({ engine }) => {
         const y = robot.y * SCALE;
 
         // Robot Body (centered on tile coord)
-        // If robot.x = 5.5, it's at middle of tile 5? No, previous logic was index based.
-        // Robot aims for x.5. So drawing at x*SCALE centers it if x is center.
-        // Let's assume robot x is the center of the robot.
-        // We want to draw a box centered at x,y.
+        // Robot is 30x30 inches = 6x6 grid cells
         ctx.fillStyle = robot.team === "RED" ? "#ff4444" : "#4444ff";
         ctx.fillRect(
-          x - 0.4 * SCALE,
-          y - 0.4 * SCALE,
-          0.8 * SCALE,
-          0.8 * SCALE,
+          x - (ROBOT_WIDTH_GRID / 2) * SCALE,
+          y - (ROBOT_HEIGHT_GRID / 2) * SCALE,
+          ROBOT_WIDTH_GRID * SCALE,
+          ROBOT_HEIGHT_GRID * SCALE,
         );
 
         // ID
         ctx.fillStyle = "white";
         ctx.font = "10px Arial";
         ctx.textAlign = "center";
-        ctx.fillText(robot.id, x, y - 0.5 * SCALE);
+        ctx.fillText(robot.id, x, y - (ROBOT_HEIGHT_GRID / 2 + 0.2) * SCALE);
 
         // Has Ball Indicator (Count)
         if (robot.ballCount > 0) {
           ctx.fillStyle = "orange";
           ctx.beginPath();
-          ctx.arc(x, y, 0.2 * SCALE, 0, 2 * Math.PI);
+          ctx.arc(x, y, BALL_RADIUS_GRID * SCALE, 0, 2 * Math.PI);
           ctx.fill();
 
           // Count text

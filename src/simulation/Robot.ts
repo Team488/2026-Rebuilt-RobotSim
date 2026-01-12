@@ -20,9 +20,10 @@ export class Robot {
   y: number;
   team: Team;
   ballCount: number = 0;
-  maxBalls: number = 3;
+  maxBalls: number;
   shotCooldown: number = 0;
-  maxShootDistance: number = 10; // Default max shoot distance
+  maxShootDistance: number;
+  shotCooldownMax: number; // Ticks between shots
 
   scoringStrategy: RobotStrategy;
   collectionStrategy: RobotStrategy;
@@ -42,6 +43,13 @@ export class Robot {
     this.team = team;
     this.scoringStrategy = scoringStrategy;
     this.collectionStrategy = collectionStrategy;
+    
+    // Randomize robot attributes
+    this.maxBalls = Math.floor(Math.random() * (60 - 8 + 1)) + 8; // 8-60 balls
+    this.ballCount = 8; // Start with 8 balls
+    this.maxShootDistance = Math.floor(Math.random() * (50 - 6 + 1)) + 6; // 6-50 grid cells
+    // 2-4 shots per second at 20 ticks/sec = cooldown of 5-10 ticks
+    this.shotCooldownMax = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
   }
 
   setMode(mode: "SCORING" | "COLLECTING") {
